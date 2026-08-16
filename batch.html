@@ -270,6 +270,21 @@ Last updated: August 16, 2026
           <input type="text" id="excludedParkingInput" placeholder="例如：5, 12, 100-105" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-slate-200 focus:outline-none focus:border-indigo-500 font-mono">
         </div>
 
+        <!-- Time Config -->
+        <div>
+          <label class="block text-sm font-semibold text-slate-300 mb-2">時間參數設定</label>
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <span class="text-xs text-slate-500">單步動畫時間 (秒)</span>
+              <input type="number" id="rollDurationInput" min="0.1" max="10" step="0.1" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-slate-200 focus:outline-none focus:border-indigo-500 font-mono mt-1">
+            </div>
+            <div>
+              <span class="text-xs text-slate-500">批次自動間隔 (秒)</span>
+              <input type="number" id="batchIntervalInput" min="0.1" max="10" step="0.1" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-slate-200 focus:outline-none focus:border-indigo-500 font-mono mt-1">
+            </div>
+          </div>
+        </div>
+
         <!-- Sound Config -->
         <div class="flex flex-col bg-slate-950/40 p-4 border border-slate-800/80 rounded-xl gap-3">
           <div class="flex items-center justify-between">
@@ -319,69 +334,145 @@ Last updated: August 16, 2026
   </footer>
 
   <script>
-     // Audio synthesizer helper using Web Audio API (8-bit Retro Game Style)
-     let audioCtx = null;
-     function playSound(type) {
-       const settings = getSettings();
-       if (!settings.soundEnabled) return;
-       
-       try {
-         if (!audioCtx) {
-           audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-         }
-         if (audioCtx.state === 'suspended') {
-           audioCtx.resume();
-         }
-         
-         const osc = audioCtx.createOscillator();
-         const gain = audioCtx.createGain();
-         osc.connect(gain);
-         gain.connect(audioCtx.destination);
-         
-         const now = audioCtx.currentTime;
-         
-         if (type === 'roll') {
-           // 8-bit short high-pitch chirp
-           osc.type = 'square';
-           osc.frequency.setValueAtTime(600, now);
-           osc.frequency.exponentialRampToValueAtTime(200, now + 0.05);
-           gain.gain.setValueAtTime(0.04, now);
-           gain.gain.linearRampToValueAtTime(0.001, now + 0.05);
-           osc.start(now);
-           osc.stop(now + 0.05);
-         } else if (type === 'success') {
-           // Retro game coin chime (double pitch square wave)
-           osc.type = 'square';
-           osc.frequency.setValueAtTime(987.77, now); // B5
-           osc.frequency.setValueAtTime(1318.51, now + 0.08); // E6
-           gain.gain.setValueAtTime(0.06, now);
-           gain.gain.setValueAtTime(0.06, now + 0.08);
-           gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
-           osc.start(now);
-           osc.stop(now + 0.35);
-         } else if (type === 'reset') {
-           // Retro game falling laser sweep
-           osc.type = 'sawtooth';
-           osc.frequency.setValueAtTime(400, now);
-           osc.frequency.linearRampToValueAtTime(100, now + 0.3);
-           gain.gain.setValueAtTime(0.06, now);
-           gain.gain.linearRampToValueAtTime(0.001, now + 0.3);
-           osc.start(now);
-           osc.stop(now + 0.3);
-         } else if (type === 'warning') {
-           // Retro game error buzz
-           osc.type = 'square';
-           osc.frequency.setValueAtTime(150, now);
-           osc.frequency.setValueAtTime(110, now + 0.08);
-           gain.gain.setValueAtTime(0.1, now);
-           gain.gain.linearRampToValueAtTime(0.001, now + 0.2);
-           osc.start(now);
-           osc.stop(now + 0.2);
-         }
-       } catch (err) {
-         console.warn("Audio playback failed: ", err);
-       }
-     }
+    // Audio synthesizer helper using Web Audio API
+    let audioCtx = null;
+    function playSound(type) {
+      const settings = getSettings();
+      if (!settings.soundEnabled) return;
+      
+      const style = settings.soundStyle || 'retro';
+      
+      try {
+        if (!audioCtx) {
+          audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        if (audioCtx.state === 'suspended') {
+          audioCtx.resume();
+        }
+        
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        
+        const now = audioCtx.currentTime;
+        
+        if (style === 'modern') {
+          // --- Sci-Fi / Modern Style ---
+          if (type === 'roll') {
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(120, now);
+            osc.frequency.exponentialRampToValueAtTime(280, now + 0.07);
+            gain.gain.setValueAtTime(0.08, now);
+            gain.gain.linearRampToValueAtTime(0.001, now + 0.07);
+            osc.start(now);
+            osc.stop(now + 0.07);
+          } else if (type === 'success') {
+            // Sparkling crystal cascade
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(1046.50, now); // C6
+            osc.frequency.setValueAtTime(1318.51, now + 0.06); // E6
+            osc.frequency.setValueAtTime(1567.98, now + 0.12); // G6
+            osc.frequency.setValueAtTime(2093.00, now + 0.18); // C7
+            gain.gain.setValueAtTime(0.08, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.55);
+            osc.start(now);
+            osc.stop(now + 0.55);
+          } else if (type === 'reset') {
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(350, now);
+            osc.frequency.linearRampToValueAtTime(150, now + 0.25);
+            gain.gain.setValueAtTime(0.06, now);
+            gain.gain.linearRampToValueAtTime(0.001, now + 0.25);
+            osc.start(now);
+            osc.stop(now + 0.25);
+          } else if (type === 'warning') {
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(120, now);
+            gain.gain.setValueAtTime(0.12, now);
+            gain.gain.linearRampToValueAtTime(0.001, now + 0.2);
+            osc.start(now);
+            osc.stop(now + 0.2);
+          }
+        } else if (style === 'suspense') {
+          // --- Classic Suspense / Drumroll Style ---
+          if (type === 'roll') {
+            // Deep suspense mechanical ticks
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(100, now);
+            gain.gain.setValueAtTime(0.12, now);
+            gain.gain.linearRampToValueAtTime(0.001, now + 0.04);
+            osc.start(now);
+            osc.stop(now + 0.04);
+          } else if (type === 'success') {
+            // Heroic Brass Fanfare
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(523.25, now); // C5
+            osc.frequency.setValueAtTime(783.99, now + 0.1); // G5
+            osc.frequency.setValueAtTime(1046.50, now + 0.2); // C6
+            gain.gain.setValueAtTime(0.1, now);
+            gain.gain.setValueAtTime(0.1, now + 0.2);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.6);
+            osc.start(now);
+            osc.stop(now + 0.6);
+          } else if (type === 'reset') {
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(220, now);
+            osc.frequency.linearRampToValueAtTime(60, now + 0.35);
+            gain.gain.setValueAtTime(0.08, now);
+            gain.gain.linearRampToValueAtTime(0.001, now + 0.35);
+            osc.start(now);
+            osc.stop(now + 0.35);
+          } else if (type === 'warning') {
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(160, now);
+            osc.frequency.setValueAtTime(130, now + 0.08);
+            gain.gain.setValueAtTime(0.12, now);
+            gain.gain.linearRampToValueAtTime(0.001, now + 0.25);
+            osc.start(now);
+            osc.stop(now + 0.25);
+          }
+        } else {
+          // --- 8-bit Retro Game Style (Default) ---
+          if (type === 'roll') {
+            osc.type = 'square';
+            osc.frequency.setValueAtTime(600, now);
+            osc.frequency.exponentialRampToValueAtTime(200, now + 0.05);
+            gain.gain.setValueAtTime(0.04, now);
+            gain.gain.linearRampToValueAtTime(0.001, now + 0.05);
+            osc.start(now);
+            osc.stop(now + 0.05);
+          } else if (type === 'success') {
+            osc.type = 'square';
+            osc.frequency.setValueAtTime(987.77, now); // B5
+            osc.frequency.setValueAtTime(1318.51, now + 0.08); // E6
+            gain.gain.setValueAtTime(0.06, now);
+            gain.gain.setValueAtTime(0.06, now + 0.08);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+            osc.start(now);
+            osc.stop(now + 0.35);
+          } else if (type === 'reset') {
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(400, now);
+            osc.frequency.linearRampToValueAtTime(100, now + 0.3);
+            gain.gain.setValueAtTime(0.06, now);
+            gain.gain.linearRampToValueAtTime(0.001, now + 0.3);
+            osc.start(now);
+            osc.stop(now + 0.3);
+          } else if (type === 'warning') {
+            osc.type = 'square';
+            osc.frequency.setValueAtTime(150, now);
+            osc.frequency.setValueAtTime(110, now + 0.08);
+            gain.gain.setValueAtTime(0.1, now);
+            gain.gain.linearRampToValueAtTime(0.001, now + 0.2);
+            osc.start(now);
+            osc.stop(now + 0.2);
+          }
+        }
+      } catch (err) {
+        console.warn("Audio playback failed: ", err);
+      }
+    }
 
     // Default settings
     const defaultSettings = {
@@ -390,7 +481,10 @@ Last updated: August 16, 2026
       units: ['A1','A2','A3','A5','A6','A7','A8','A9','A11'],
       parkingCount: 202,
       excludedParkingStr: "",
-      soundEnabled: true
+      soundEnabled: true,
+      soundStyle: 'retro',
+      rollDuration: 0.8,
+      batchInterval: 1.5
     };
 
     // Parser for excluded parking spots
@@ -525,6 +619,8 @@ Last updated: August 16, 2026
     const excludedParkingInput = document.getElementById("excludedParkingInput");
     const soundToggle = document.getElementById("soundToggle");
     const soundStyleSelect = document.getElementById("soundStyleSelect");
+    const rollDurationInput = document.getElementById("rollDurationInput");
+    const batchIntervalInput = document.getElementById("batchIntervalInput");
 
     // UI Render
     function renderUI() {
@@ -803,6 +899,8 @@ Last updated: August 16, 2026
       unitsInput.value = settings.units.join(', ');
       parkingCountInput.value = settings.parkingCount;
       excludedParkingInput.value = settings.excludedParkingStr || "";
+      rollDurationInput.value = settings.rollDuration || 0.8;
+      batchIntervalInput.value = settings.batchInterval || 1.5;
       soundToggle.checked = settings.soundEnabled;
       soundStyleSelect.value = settings.soundStyle || "retro";
     }
@@ -845,17 +943,32 @@ Last updated: August 16, 2026
         return;
       }
 
+      const rollD = parseFloat(rollDurationInput.value);
+      const batchI = parseFloat(batchIntervalInput.value);
+      
+      if (isNaN(rollD) || rollD < 0.1 || rollD > 10) {
+        alert("單步動畫時間必須介於 0.1 至 10 秒之間！");
+        return;
+      }
+      if (isNaN(batchI) || batchI < 0.1 || batchI > 10) {
+        alert("批次自動間隔時間必須介於 0.1 至 10 秒之間！");
+        return;
+      }
+
       const newSettings = {
         minFloor: minF,
         maxFloor: maxF,
         units: unitsArr,
         parkingCount: parkingC,
         excludedParkingStr: excludedParkingInput.value.trim(),
+        rollDuration: rollD,
+        batchInterval: batchI,
         soundEnabled: soundToggle.checked,
         soundStyle: soundStyleSelect.value
       };
 
       saveSettings(newSettings);
+      intervalInput.value = newSettings.batchInterval;
       
       // Request state reset
       if (confirm("儲存設定成功！是否要依照新設定重置批次抽選狀態？\n(批次抽籤需要重新產生隨機順序！)")) {
@@ -918,6 +1031,19 @@ Last updated: August 16, 2026
     exportExcelBtn.addEventListener("click", exportToExcel);
 
     // Initial Load
+    const initialSettings = getSettings();
+    intervalInput.value = initialSettings.batchInterval || 1.5;
+    
+    // Sync intervalInput on manual change
+    intervalInput.addEventListener("change", () => {
+      const val = parseFloat(intervalInput.value);
+      if (!isNaN(val) && val >= 0.1 && val <= 10) {
+        const s = getSettings();
+        s.batchInterval = val;
+        saveSettings(s);
+      }
+    });
+
     loadState();
     renderUI();
   </script>

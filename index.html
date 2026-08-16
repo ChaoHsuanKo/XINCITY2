@@ -237,6 +237,21 @@ Last updated: August 16, 2026
           <input type="text" id="excludedParkingInput" placeholder="例如：5, 12, 100-105" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-slate-200 focus:outline-none focus:border-indigo-500 font-mono">
         </div>
 
+        <!-- Time Config -->
+        <div>
+          <label class="block text-sm font-semibold text-slate-300 mb-2">時間參數設定</label>
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <span class="text-xs text-slate-500">單步動畫時間 (秒)</span>
+              <input type="number" id="rollDurationInput" min="0.1" max="10" step="0.1" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-slate-200 focus:outline-none focus:border-indigo-500 font-mono mt-1">
+            </div>
+            <div>
+              <span class="text-xs text-slate-500">批次自動間隔 (秒)</span>
+              <input type="number" id="batchIntervalInput" min="0.1" max="10" step="0.1" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-slate-200 focus:outline-none focus:border-indigo-500 font-mono mt-1">
+            </div>
+          </div>
+        </div>
+
         <!-- Sound Config -->
         <!-- Sound Config -->
         <div class="flex flex-col bg-slate-950/40 p-4 border border-slate-800/80 rounded-xl gap-3">
@@ -571,6 +586,8 @@ Last updated: August 16, 2026
     const excludedParkingInput = document.getElementById("excludedParkingInput");
     const soundToggle = document.getElementById("soundToggle");
     const soundStyleSelect = document.getElementById("soundStyleSelect");
+    const rollDurationInput = document.getElementById("rollDurationInput");
+    const batchIntervalInput = document.getElementById("batchIntervalInput");
 
     // Render Stats and Histories
     function renderUI() {
@@ -693,8 +710,9 @@ Last updated: August 16, 2026
       saveState();
 
       // Trigger rolling visual
-      const tempPool = generateHouseholds(getSettings()); // full list for better rolling variety
-      animateDraw(householdDisplay, tempPool, 800, chosen, () => {
+      const settings = getSettings();
+      const tempPool = generateHouseholds(settings); // full list for better rolling variety
+      animateDraw(householdDisplay, tempPool, Math.max(100, parseFloat(settings.rollDuration || 0.8) * 1000), chosen, () => {
         renderUI();
       });
     }
@@ -728,7 +746,7 @@ Last updated: August 16, 2026
         }
       }
       
-      animateDraw(parkingDisplay, tempParkingPool, 800, chosenParking, () => {
+      animateDraw(parkingDisplay, tempParkingPool, Math.max(100, parseFloat(settings.rollDuration || 0.8) * 1000), chosenParking, () => {
         state.drawnHouseholds.push({
           household: lastHousehold,
           parking: chosenParking
@@ -758,6 +776,8 @@ Last updated: August 16, 2026
       unitsInput.value = settings.units.join(', ');
       parkingCountInput.value = settings.parkingCount;
       excludedParkingInput.value = settings.excludedParkingStr || "";
+      rollDurationInput.value = settings.rollDuration || 0.8;
+      batchIntervalInput.value = settings.batchInterval || 1.5;
       soundToggle.checked = settings.soundEnabled;
       soundStyleSelect.value = settings.soundStyle || "retro";
     }
@@ -800,12 +820,26 @@ Last updated: August 16, 2026
         return;
       }
 
+      const rollD = parseFloat(rollDurationInput.value);
+      const batchI = parseFloat(batchIntervalInput.value);
+      
+      if (isNaN(rollD) || rollD < 0.1 || rollD > 10) {
+        alert("單步動畫時間必須介於 0.1 至 10 秒之間！");
+        return;
+      }
+      if (isNaN(batchI) || batchI < 0.1 || batchI > 10) {
+        alert("批次自動間隔時間必須介於 0.1 至 10 秒之間！");
+        return;
+      }
+
       const newSettings = {
         minFloor: minF,
         maxFloor: maxF,
         units: unitsArr,
         parkingCount: parkingC,
         excludedParkingStr: excludedParkingInput.value.trim(),
+        rollDuration: rollD,
+        batchInterval: batchI,
         soundEnabled: soundToggle.checked,
         soundStyle: soundStyleSelect.value
       };
