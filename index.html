@@ -1,86 +1,451 @@
 <!--
 Author: Jason Ko
 Mail: phelpske.dev at gmail dot com
-Last updated: July 30, 2025 00:12 AM
+Last updated: August 16, 2026
 -->
-
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>機車車位抽籤系統</title>
+  <title>🏍️ 機車車位抽籤系統 - 單步模式</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts Outfit & Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
-    body { font-family: system-ui, sans-serif; }
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    }
+    .font-outfit {
+      font-family: 'Outfit', sans-serif;
+    }
+    /* Glow borders and effects */
+    .glow-indigo:hover {
+      box-shadow: 0 0 20px rgba(99, 102, 241, 0.4);
+    }
+    .glow-emerald:hover {
+      box-shadow: 0 0 20px rgba(16, 185, 129, 0.4);
+    }
+    /* Custom scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(15, 23, 42, 0.3);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(148, 163, 184, 0.3);
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(148, 163, 184, 0.5);
+    }
   </style>
 </head>
-<body class="bg-gray-100 min-h-screen flex flex-col lg:flex-row items-start p-6 gap-6">
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col">
 
-  <!-- 左側：操作區 -->
-  <div class="flex-1 w-full max-w-2xl">
-    <h1 class="text-3xl font-bold mb-4">🏍️ 機車車位抽籤系統</h1>
+  <!-- Top Navigation Header -->
+  <header class="border-b border-slate-900 bg-slate-950/80 backdrop-blur-md sticky top-0 z-40">
+    <div class="max-w-7xl mx-auto px-6 py-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+      <div class="flex items-center gap-3">
+        <div class="bg-gradient-to-tr from-indigo-500 to-purple-600 p-2.5 rounded-xl shadow-lg shadow-indigo-500/20">
+          <span class="text-2xl">🏍️</span>
+        </div>
+        <div>
+          <h1 class="text-xl font-bold font-outfit tracking-tight bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">機車車位抽籤系統</h1>
+          <p class="text-xs text-slate-400">專為社區大樓設計的公平車位抽選工具</p>
+        </div>
+      </div>
+      
+      <!-- Nav Tabs -->
+      <div class="flex items-center bg-slate-900/80 p-1.5 rounded-xl border border-slate-800/60">
+        <a href="index.html" class="px-4 py-2 rounded-lg text-sm font-medium transition-all bg-indigo-600 text-white shadow-md shadow-indigo-600/10">
+          🔄 單步抽籤
+        </a>
+        <a href="batch.html" class="px-4 py-2 rounded-lg text-sm font-medium transition-all text-slate-400 hover:text-slate-200">
+          ⚡ 批次抽籤
+        </a>
+      </div>
 
-    <div class="flex gap-4 mb-4">
-      <button id="drawHouseholdBtn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
-        第一階段：抽出住戶
-      </button>
-      <button id="drawParkingBtn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">
-        第二階段：分配車位
-      </button>
-      <button id="resetAllBtn" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded">
-        🔄 清除歷史
+      <!-- Settings Action -->
+      <button id="openSettingsBtn" class="flex items-center gap-2 px-4 py-2 bg-slate-900 border border-slate-800 rounded-xl hover:bg-slate-800 text-sm font-medium transition-all text-slate-300">
+        ⚙️ 系統設定
       </button>
     </div>
+  </header>
 
-    <div class="text-sm text-gray-700 mb-4">
-      剩餘住戶數：<span id="remainingHouseholds">198</span>，
-      剩餘車位數：<span id="remainingParking">202</span>
+  <!-- Main Content Container -->
+  <main class="flex-1 max-w-7xl w-full mx-auto p-6 flex flex-col lg:flex-row gap-8">
+
+    <!-- Left Column: Operations -->
+    <div class="flex-1 flex flex-col gap-6">
+      
+      <!-- Quick Counter Cards -->
+      <div class="grid grid-cols-2 sm:grid-cols-3 gap-4">
+        <div class="bg-slate-900/40 border border-slate-900 rounded-2xl p-4 flex flex-col justify-between backdrop-blur-sm">
+          <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">剩餘住戶</span>
+          <span id="remainingHouseholds" class="text-3xl font-extrabold font-outfit text-indigo-400 mt-2">--</span>
+        </div>
+        <div class="bg-slate-900/40 border border-slate-900 rounded-2xl p-4 flex flex-col justify-between backdrop-blur-sm">
+          <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">剩餘車位</span>
+          <span id="remainingParking" class="text-3xl font-extrabold font-outfit text-emerald-400 mt-2">--</span>
+        </div>
+        <div class="col-span-2 sm:col-span-1 bg-slate-900/40 border border-slate-900 rounded-2xl p-4 flex flex-col justify-between backdrop-blur-sm">
+          <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">已配對數</span>
+          <span id="matchedCount" class="text-3xl font-extrabold font-outfit text-purple-400 mt-2">--</span>
+        </div>
+      </div>
+
+      <!-- Main Interaction Card -->
+      <div class="bg-slate-900/60 border border-slate-800/80 rounded-3xl p-6 md:p-8 flex flex-col gap-8 shadow-2xl relative overflow-hidden backdrop-blur-md">
+        
+        <!-- Gradient Accent Background Glow -->
+        <div class="absolute -top-24 -left-24 w-48 h-48 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none"></div>
+        <div class="absolute -bottom-24 -right-24 w-48 h-48 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none"></div>
+
+        <!-- Buttons Panel -->
+        <div class="flex flex-wrap gap-4 z-10">
+          <button id="drawHouseholdBtn" class="flex-1 min-w-[150px] bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 text-white font-bold py-4 px-6 rounded-2xl transition-all transform hover:-translate-y-0.5 shadow-lg shadow-indigo-600/20 glow-indigo flex items-center justify-center gap-2">
+            <span>第一階段：抽出住戶</span> 🎯
+          </button>
+          <button id="drawParkingBtn" class="flex-1 min-w-[150px] bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-500 hover:to-emerald-600 text-white font-bold py-4 px-6 rounded-2xl transition-all transform hover:-translate-y-0.5 shadow-lg shadow-emerald-600/20 glow-emerald flex items-center justify-center gap-2">
+            <span>第二階段：分配車位</span> 🅿️
+          </button>
+          <button id="resetAllBtn" class="bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white font-semibold py-4 px-6 rounded-2xl transition-all flex items-center justify-center gap-2">
+            <span>重置</span> 🔄
+          </button>
+        </div>
+
+        <!-- Drawing Status Visualizer -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 z-10">
+          
+          <!-- Current Household Visual -->
+          <div class="bg-slate-950/60 border border-slate-900 rounded-2xl p-6 flex flex-col items-center justify-center text-center min-h-[200px] relative">
+            <span class="absolute top-4 left-4 text-xs font-semibold text-slate-500 uppercase tracking-widest">當前抽中住戶</span>
+            <div id="householdDisplay" class="text-4xl md:text-5xl font-extrabold font-outfit text-indigo-400 tracking-wide transition-all duration-100">
+              等待抽選
+            </div>
+            <div id="householdStatus" class="text-xs text-indigo-400/50 mt-4 font-medium uppercase tracking-wider">STAGE 1</div>
+          </div>
+
+          <!-- Current Parking Visual -->
+          <div class="bg-slate-950/60 border border-slate-900 rounded-2xl p-6 flex flex-col items-center justify-center text-center min-h-[200px] relative">
+            <span class="absolute top-4 left-4 text-xs font-semibold text-slate-500 uppercase tracking-widest">獲配車位</span>
+            <div id="parkingDisplay" class="text-4xl md:text-5xl font-extrabold font-outfit text-emerald-400 tracking-wide transition-all duration-100">
+              等待配對
+            </div>
+            <div id="parkingStatus" class="text-xs text-emerald-400/50 mt-4 font-medium uppercase tracking-wider">STAGE 2</div>
+          </div>
+
+        </div>
+
+      </div>
+
     </div>
 
-    <div class="bg-white rounded shadow p-4 mb-4">
-      <h2 class="text-xl font-semibold mb-2">🎯 當前住戶</h2>
-      <div id="householdResult" class="text-blue-700 font-mono text-lg"></div>
-    </div>
+    <!-- Right Column: Sidebar Logs -->
+    <aside class="w-full lg:w-96 shrink-0 flex flex-col gap-6">
+      
+      <!-- Household Log -->
+      <div class="flex-1 bg-slate-900/60 border border-slate-800/80 rounded-3xl p-6 flex flex-col h-[320px] shadow-xl backdrop-blur-md">
+        <div class="flex justify-between items-center mb-4">
+          <h3 class="font-bold text-slate-200 flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-indigo-500"></span>
+            住戶抽出順序
+          </h3>
+          <span id="householdLogCount" class="text-xs bg-slate-800 text-slate-400 px-2 py-0.5 rounded-full">0 戶</span>
+        </div>
+        <div class="flex-1 overflow-y-auto pr-1">
+          <ul id="householdHistory" class="space-y-2 text-sm text-slate-300 font-mono">
+            <!-- Dynamic Items -->
+          </ul>
+        </div>
+      </div>
 
-    <div class="bg-white rounded shadow p-4">
-      <h2 class="text-xl font-semibold mb-2">🅿️ 當前車位配對</h2>
-      <div id="parkingResult" class="text-green-700 font-mono text-lg"></div>
+      <!-- Pairing Log -->
+      <div class="flex-1 bg-slate-900/60 border border-slate-800/80 rounded-3xl p-6 flex flex-col h-[320px] shadow-xl backdrop-blur-md">
+        <div class="flex justify-between items-center mb-4">
+          <h3 class="font-bold text-slate-200 flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+            完整配對紀錄
+          </h3>
+          <span id="parkingLogCount" class="text-xs bg-slate-800 text-slate-400 px-2 py-0.5 rounded-full">0 筆</span>
+        </div>
+        <div class="flex-1 overflow-y-auto pr-1">
+          <ul id="parkingHistory" class="space-y-2 text-sm text-slate-300 font-mono">
+            <!-- Dynamic Items -->
+          </ul>
+        </div>
+      </div>
+
+    </aside>
+
+  </main>
+
+  <!-- Settings Modal -->
+  <div id="settingsModal" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+    <div class="bg-slate-900 border border-slate-800 w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden transform transition-all flex flex-col max-h-[90vh]">
+      
+      <!-- Modal Header -->
+      <div class="p-6 border-b border-slate-800 flex justify-between items-center">
+        <h3 class="text-lg font-bold font-outfit text-slate-100 flex items-center gap-2">
+          <span>⚙️</span> 系統設定
+        </h3>
+        <button id="closeSettingsBtn" class="text-slate-400 hover:text-white transition-all text-xl font-semibold">×</button>
+      </div>
+
+      <!-- Modal Body (Scrollable) -->
+      <div class="p-6 overflow-y-auto flex-1 flex flex-col gap-5">
+        
+        <!-- Floor Config -->
+        <div>
+          <label class="block text-sm font-semibold text-slate-300 mb-2">樓層範圍設定</label>
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <span class="text-xs text-slate-500">起始樓層</span>
+              <input type="number" id="minFloorInput" min="1" max="100" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-slate-200 focus:outline-none focus:border-indigo-500 font-mono mt-1">
+            </div>
+            <div>
+              <span class="text-xs text-slate-500">最高樓層</span>
+              <input type="number" id="maxFloorInput" min="1" max="100" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-slate-200 focus:outline-none focus:border-indigo-500 font-mono mt-1">
+            </div>
+          </div>
+        </div>
+
+        <!-- Unit Codes -->
+        <div>
+          <label class="block text-sm font-semibold text-slate-300 mb-1">戶別代碼設定</label>
+          <span class="text-xs text-slate-500 block mb-2">請以英文逗號 (,) 分隔各戶別</span>
+          <textarea id="unitsInput" rows="2" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-slate-200 focus:outline-none focus:border-indigo-500 font-mono resize-none"></textarea>
+        </div>
+
+        <!-- Parking Spot Count -->
+        <div>
+          <label class="block text-sm font-semibold text-slate-300 mb-2">總車位數</label>
+          <input type="number" id="parkingCountInput" min="1" max="1000" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-slate-200 focus:outline-none focus:border-indigo-500 font-mono">
+        </div>
+
+        <!-- Excluded Parking Spots -->
+        <div>
+          <label class="block text-sm font-semibold text-slate-300 mb-1">排除的車位編號（特殊車位）</label>
+          <span class="text-xs text-slate-500 block mb-2">請以英文逗號 (,) 分隔車位，支援範圍 (例: 5, 12, 100-105)</span>
+          <input type="text" id="excludedParkingInput" placeholder="例如：5, 12, 100-105" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-slate-200 focus:outline-none focus:border-indigo-500 font-mono">
+        </div>
+
+        <!-- Sound Config -->
+        <div class="flex items-center justify-between bg-slate-950/40 p-4 border border-slate-800/80 rounded-xl">
+          <div>
+            <span class="block text-sm font-semibold text-slate-300">抽選音效</span>
+            <span class="text-xs text-slate-500">在抽籤進行中播放動態電子音效</span>
+          </div>
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" id="soundToggle" class="sr-only peer" checked>
+            <div class="w-11 h-6 bg-slate-850 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-slate-400 after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600 peer-checked:after:bg-white"></div>
+          </label>
+        </div>
+
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="p-6 border-t border-slate-800 bg-slate-950/40 flex justify-between gap-4">
+        <button id="resetDefaultsBtn" class="px-4 py-2 bg-slate-850 text-slate-400 hover:text-white rounded-xl text-sm font-medium transition-all">
+          恢復預設值
+        </button>
+        <div class="flex gap-3">
+          <button id="closeModalBtn" class="px-4 py-2 bg-slate-800 text-slate-300 hover:bg-slate-700 rounded-xl text-sm font-medium transition-all">
+            取消
+          </button>
+          <button id="saveSettingsBtn" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-sm font-medium shadow-lg shadow-indigo-600/20 transition-all">
+            儲存變更
+          </button>
+        </div>
+      </div>
+
     </div>
   </div>
 
-  <!-- 右側：紀錄側欄 -->
-  <aside class="w-full lg:w-80 shrink-0">
-    <div class="bg-white rounded shadow p-4 mb-4 h-[300px] overflow-y-auto">
-      <h3 class="text-lg font-semibold mb-2">📋 住戶抽籤紀錄</h3>
-      <ul id="householdHistory" class="list-decimal list-inside text-sm text-gray-800 space-y-1"></ul>
-    </div>
-
-    <div class="bg-white rounded shadow p-4 h-[300px] overflow-y-auto">
-      <h3 class="text-lg font-semibold mb-2">📋 車位配對紀錄</h3>
-      <ul id="parkingHistory" class="list-disc list-inside text-sm text-gray-800 space-y-1"></ul>
-    </div>
-  </aside>
+  <footer class="mt-auto border-t border-slate-900 bg-slate-950/30 py-6 text-center text-xs text-slate-600">
+    <div>機車車位抽籤系統 © 2026. Made with Jason for 鑫悅</div>
+  </footer>
 
   <script>
-    const floors = Array.from({ length: 22 }, (_, i) => i + 2);
-    const units = ['A1','A2','A3','A5','A6','A7','A8','A9','A11'];
-    const allHouseholds = [];
-    floors.forEach(f => units.forEach(u => allHouseholds.push(`${u}-${f}F`)));
+    // Audio synthesizer helper using Web Audio API
+    let audioCtx = null;
+    function playSound(type) {
+      const settings = getSettings();
+      if (!settings.soundEnabled) return;
+      
+      try {
+        if (!audioCtx) {
+          audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        if (audioCtx.state === 'suspended') {
+          audioCtx.resume();
+        }
+        
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        
+        const now = audioCtx.currentTime;
+        
+        if (type === 'roll') {
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(200, now);
+          osc.frequency.exponentialRampToValueAtTime(350, now + 0.08);
+          gain.gain.setValueAtTime(0.1, now);
+          gain.gain.linearRampToValueAtTime(0.01, now + 0.08);
+          osc.start(now);
+          osc.stop(now + 0.08);
+        } else if (type === 'success') {
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(523.25, now); // C5
+          osc.frequency.setValueAtTime(659.25, now + 0.1); // E5
+          osc.frequency.setValueAtTime(783.99, now + 0.2); // G5
+          gain.gain.setValueAtTime(0.15, now);
+          gain.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
+          osc.start(now);
+          osc.stop(now + 0.4);
+        } else if (type === 'reset') {
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(280, now);
+          osc.frequency.linearRampToValueAtTime(90, now + 0.25);
+          gain.gain.setValueAtTime(0.08, now);
+          gain.gain.linearRampToValueAtTime(0.01, now + 0.25);
+          osc.start(now);
+          osc.stop(now + 0.25);
+        } else if (type === 'warning') {
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(130, now);
+          gain.gain.setValueAtTime(0.15, now);
+          gain.gain.linearRampToValueAtTime(0.01, now + 0.2);
+          osc.start(now);
+          osc.stop(now + 0.2);
+        }
+      } catch (err) {
+        console.warn("Audio playback failed: ", err);
+      }
+    }
 
-    let householdPool = [...allHouseholds];
-    let parkingPool = Array.from({ length: 202 }, (_, i) => i + 1);
-    let drawnHouseholds = [];
-    let lastDrawnHousehold = null;
-    let awaitingParking = false;
+    // Default settings
+    const defaultSettings = {
+      minFloor: 2,
+      maxFloor: 23,
+      units: ['A1','A2','A3','A5','A6','A7','A8','A9','A11'],
+      parkingCount: 202,
+      excludedParkingStr: "",
+      soundEnabled: true
+    };
 
-    const householdResult = document.getElementById("householdResult");
-    const parkingResult = document.getElementById("parkingResult");
-    const householdHistory = document.getElementById("householdHistory");
-    const parkingHistory = document.getElementById("parkingHistory");
-    const remainingHouseholds = document.getElementById("remainingHouseholds");
-    const remainingParking = document.getElementById("remainingParking");
+    // Parser for excluded parking spots
+    function parseExcludedParking(str) {
+      const excluded = new Set();
+      if (!str) return excluded;
+      const parts = str.split(',');
+      parts.forEach(part => {
+        const trimmed = part.trim();
+        if (trimmed.includes('-')) {
+          const rangeParts = trimmed.split('-');
+          if (rangeParts.length === 2) {
+            const start = parseInt(rangeParts[0]);
+            const end = parseInt(rangeParts[1]);
+            if (!isNaN(start) && !isNaN(end) && start <= end) {
+              for (let i = start; i <= end; i++) {
+                excluded.add(i);
+              }
+            }
+          }
+        } else {
+          const num = parseInt(trimmed);
+          if (!isNaN(num)) {
+            excluded.add(num);
+          }
+        }
+      });
+      return excluded;
+    }
 
+    // Settings retrieval
+    function getSettings() {
+      const saved = localStorage.getItem('lottery_settings');
+      if (saved) {
+        try {
+          return JSON.parse(saved);
+        } catch(e) {
+          return defaultSettings;
+        }
+      }
+      return defaultSettings;
+    }
+
+    function saveSettings(settings) {
+      localStorage.setItem('lottery_settings', JSON.stringify(settings));
+    }
+
+    // Generate static pool of households based on settings
+    function generateHouseholds(settings) {
+      const households = [];
+      const minF = parseInt(settings.minFloor);
+      const maxF = parseInt(settings.maxFloor);
+      for (let f = minF; f <= maxF; f++) {
+        settings.units.forEach(u => {
+          households.push(`${u}-${f}F`);
+        });
+      }
+      return households;
+    }
+
+    // Current Lottery States
+    let state = {
+      householdPool: [],
+      parkingPool: [],
+      drawnHouseholds: [], // Stores elements: { household: "A1-2F", parking: 5 }
+      lastDrawnHousehold: null,
+      awaitingParking: false
+    };
+
+    // Load state from localStorage or initialize
+    function loadState() {
+      const saved = localStorage.getItem('lottery_state_single');
+      const settings = getSettings();
+      if (saved) {
+        try {
+          state = JSON.parse(saved);
+        } catch(e) {
+          initializeNewState(settings);
+        }
+      } else {
+        initializeNewState(settings);
+      }
+    }
+
+    function saveState() {
+      localStorage.setItem('lottery_state_single', JSON.stringify(state));
+    }
+
+    function initializeNewState(settings) {
+      state.householdPool = generateHouseholds(settings);
+      
+      const totalCount = parseInt(settings.parkingCount);
+      const excludedSet = parseExcludedParking(settings.excludedParkingStr);
+      const pPool = [];
+      for (let i = 1; i <= totalCount; i++) {
+        if (!excludedSet.has(i)) {
+          pPool.push(i);
+        }
+      }
+      state.parkingPool = pPool;
+
+      state.drawnHouseholds = [];
+      state.lastDrawnHousehold = null;
+      state.awaitingParking = false;
+      saveState();
+    }
+
+    // Fisher-Yates Shuffle
     function shuffle(arr) {
       for (let i = arr.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
@@ -88,76 +453,284 @@ Last updated: July 30, 2025 00:12 AM
       }
     }
 
-    function updateCounters() {
-      remainingHouseholds.textContent = householdPool.length;
-      remainingParking.textContent = parkingPool.length;
+    // DOM Elements
+    const remainingHouseholds = document.getElementById("remainingHouseholds");
+    const remainingParking = document.getElementById("remainingParking");
+    const matchedCount = document.getElementById("matchedCount");
+    const householdDisplay = document.getElementById("householdDisplay");
+    const parkingDisplay = document.getElementById("parkingDisplay");
+    const householdHistory = document.getElementById("householdHistory");
+    const parkingHistory = document.getElementById("parkingHistory");
+    const householdLogCount = document.getElementById("householdLogCount");
+    const parkingLogCount = document.getElementById("parkingLogCount");
+
+    // Modal Inputs
+    const settingsModal = document.getElementById("settingsModal");
+    const minFloorInput = document.getElementById("minFloorInput");
+    const maxFloorInput = document.getElementById("maxFloorInput");
+    const unitsInput = document.getElementById("unitsInput");
+    const parkingCountInput = document.getElementById("parkingCountInput");
+    const excludedParkingInput = document.getElementById("excludedParkingInput");
+    const soundToggle = document.getElementById("soundToggle");
+
+    // Render Stats and Histories
+    function renderUI() {
+      remainingHouseholds.textContent = state.householdPool.length;
+      remainingParking.textContent = state.parkingPool.length;
+      matchedCount.textContent = state.drawnHouseholds.length;
+      
+      // Handle Display states
+      if (state.lastDrawnHousehold) {
+        householdDisplay.textContent = state.lastDrawnHousehold;
+        householdDisplay.classList.remove("text-slate-500");
+        householdDisplay.classList.add("text-indigo-400");
+      } else {
+        householdDisplay.textContent = "等待抽選";
+        householdDisplay.classList.remove("text-indigo-400");
+        householdDisplay.classList.add("text-slate-500");
+      }
+
+      if (state.drawnHouseholds.length > 0 && !state.awaitingParking) {
+        const lastPair = state.drawnHouseholds[state.drawnHouseholds.length - 1];
+        parkingDisplay.textContent = `車位 ${lastPair.parking}`;
+        parkingDisplay.classList.remove("text-slate-500");
+        parkingDisplay.classList.add("text-emerald-400");
+      } else {
+        parkingDisplay.textContent = "等待配對";
+        parkingDisplay.classList.remove("text-emerald-400");
+        parkingDisplay.classList.add("text-slate-500");
+      }
+
+      // Render Logs
+      householdHistory.innerHTML = "";
+      state.drawnHouseholds.forEach((item, index) => {
+        const li = document.createElement("li");
+        li.className = "flex justify-between border-b border-slate-900 py-1.5 hover:bg-slate-900/30 px-2 rounded transition-all";
+        li.innerHTML = `<span class="text-slate-500">${index + 1}.</span> <span class="text-indigo-300 font-semibold">${item.household}</span>`;
+        householdHistory.appendChild(li);
+      });
+      // If awaiting, show the current drawing household as next numbered item
+      if (state.lastDrawnHousehold) {
+        const li = document.createElement("li");
+        li.className = "flex justify-between border-b border-slate-900 py-1.5 bg-indigo-950/20 px-2 rounded animate-pulse";
+        li.innerHTML = `<span class="text-indigo-400">${state.drawnHouseholds.length + 1}.</span> <span class="text-indigo-400 font-bold">${state.lastDrawnHousehold}</span> <span class="text-xs px-1.5 py-0.5 rounded bg-indigo-900/50 text-indigo-300">配對中</span>`;
+        householdHistory.appendChild(li);
+      }
+
+      householdLogCount.textContent = `${state.drawnHouseholds.length + (state.lastDrawnHousehold ? 1 : 0)} 戶`;
+
+      // Render pairings
+      parkingHistory.innerHTML = "";
+      state.drawnHouseholds.forEach((item, index) => {
+        const li = document.createElement("li");
+        li.className = "flex justify-between items-center border-b border-slate-900 py-1.5 hover:bg-slate-900/30 px-2 rounded transition-all";
+        li.innerHTML = `
+          <div>
+            <span class="text-slate-500 text-xs mr-1">#${index + 1}</span>
+            <span class="text-indigo-300 font-semibold">${item.household}</span>
+          </div>
+          <span class="text-slate-500 text-xs">➜</span>
+          <span class="text-emerald-400 font-bold">車位 ${item.parking}</span>
+        `;
+        parkingHistory.appendChild(li);
+      });
+      parkingLogCount.textContent = `${state.drawnHouseholds.length} 筆`;
+
+      // Scroll logs to bottom
+      householdHistory.parentElement.scrollTop = householdHistory.parentElement.scrollHeight;
+      parkingHistory.parentElement.scrollTop = parkingHistory.parentElement.scrollHeight;
     }
 
-    function drawHousehold() {
-      if (awaitingParking) {
-        alert(\"請先分配目前住戶的車位後才能再抽下一戶。👀\");
-        return;
-      }
-      if (householdPool.length === 0) {
-        alert(\"已抽完所有住戶！\");
-        return;
-      }
-      shuffle(householdPool);
-      const household = householdPool.pop();
-      lastDrawnHousehold = household;
-      awaitingParking = true;
+    // Animation Rolling Effect
+    let isRolling = false;
+    
+    function animateDraw(element, pool, duration, finalValue, onComplete) {
+      isRolling = true;
+      let elapsed = 0;
+      const intervalTime = 50;
+      
+      const interval = setInterval(() => {
+        playSound('roll');
+        // Pick a random value from the remaining pool representation for visual display
+        if (pool.length > 0) {
+          const randomIndex = Math.floor(Math.random() * pool.length);
+          const tempVal = pool[randomIndex];
+          element.textContent = typeof tempVal === 'number' ? `車位 ${tempVal}` : tempVal;
+        } else {
+          element.textContent = "抽選中...";
+        }
+        
+        elapsed += intervalTime;
+        if (elapsed >= duration) {
+          clearInterval(interval);
+          element.textContent = typeof finalValue === 'number' ? `車位 ${finalValue}` : finalValue;
+          playSound('success');
+          isRolling = false;
+          onComplete();
+        }
+      }, intervalTime);
+    }
 
-      householdResult.textContent = `${drawnHouseholds.length + 1}. ${household}`;
-      const li = document.createElement(\"li\");
-      li.textContent = `${drawnHouseholds.length + 1}. ${household}`;
-      householdHistory.appendChild(li);
+    // Actions
+    function drawHousehold() {
+      if (isRolling) return;
+      if (state.awaitingParking) {
+        playSound('warning');
+        alert("請先分配目前住戶的車位後，才能再抽下一戶！👀");
+        return;
+      }
+      if (state.householdPool.length === 0) {
+        playSound('warning');
+        alert("所有住戶已抽選完畢！🎉");
+        return;
+      }
+      
+      // Shuffle & Pop
+      shuffle(state.householdPool);
+      const chosen = state.householdPool.pop();
+      
+      state.lastDrawnHousehold = chosen;
+      state.awaitingParking = true;
+      saveState();
+
+      // Trigger rolling visual
+      const tempPool = generateHouseholds(getSettings()); // full list for better rolling variety
+      animateDraw(householdDisplay, tempPool, 800, chosen, () => {
+        renderUI();
+      });
     }
 
     function drawParking() {
-      if (!lastDrawnHousehold) {
-        alert(\"請先抽住戶再配對車位！\");
+      if (isRolling) return;
+      if (!state.lastDrawnHousehold) {
+        playSound('warning');
+        alert("請先抽住戶再配對車位！");
         return;
       }
-      if (parkingPool.length === 0) {
-        alert(\"車位已用完！\");
+      if (state.parkingPool.length === 0) {
+        playSound('warning');
+        alert("車位已配發完畢！");
         return;
       }
-      shuffle(parkingPool);
-      const parking = parkingPool.pop();
-      const resultText = `${lastDrawnHousehold} ➜ 車位 ${parking}`;
-      parkingResult.textContent = resultText;
-
-      const li = document.createElement(\"li\");
-      li.textContent = resultText;
-      parkingHistory.appendChild(li);
-
-      drawnHouseholds.push(lastDrawnHousehold);
-      lastDrawnHousehold = null;
-      awaitingParking = false;
-      updateCounters();
+      
+      shuffle(state.parkingPool);
+      const chosenParking = state.parkingPool.pop();
+      
+      const lastHousehold = state.lastDrawnHousehold;
+      
+      // Trigger rolling visual
+      const settings = getSettings();
+      const totalCount = parseInt(settings.parkingCount);
+      const excludedSet = parseExcludedParking(settings.excludedParkingStr);
+      const tempParkingPool = [];
+      for (let i = 1; i <= totalCount; i++) {
+        if (!excludedSet.has(i)) {
+          tempParkingPool.push(i);
+        }
+      }
+      
+      animateDraw(parkingDisplay, tempParkingPool, 800, chosenParking, () => {
+        state.drawnHouseholds.push({
+          household: lastHousehold,
+          parking: chosenParking
+        });
+        state.lastDrawnHousehold = null;
+        state.awaitingParking = false;
+        saveState();
+        renderUI();
+      });
     }
 
     function resetAll() {
-      if (!confirm(\"確定要清除所有抽籤紀錄並重新開始嗎？\")) return;
-
-      householdPool = [...allHouseholds];
-      parkingPool = Array.from({ length: 202 }, (_, i) => i + 1);
-      drawnHouseholds = [];
-      lastDrawnHousehold = null;
-      awaitingParking = false;
-
-      householdResult.textContent = \"\";
-      parkingResult.textContent = \"\";
-      householdHistory.innerHTML = \"\";
-      parkingHistory.innerHTML = \"\";
-      updateCounters();
+      if (isRolling) return;
+      playSound('reset');
+      if (!confirm("確定要清除目前所有抽籤紀錄並重新開始嗎？所有歷史資料將會重置！")) return;
+      
+      const settings = getSettings();
+      initializeNewState(settings);
+      renderUI();
     }
 
-    document.getElementById(\"drawHouseholdBtn\").addEventListener(\"click\", drawHousehold);
-    document.getElementById(\"drawParkingBtn\").addEventListener(\"click\", drawParking);
-    document.getElementById(\"resetAllBtn\").addEventListener(\"click\", resetAll);
+    // Modal Control
+    function populateModal() {
+      const settings = getSettings();
+      minFloorInput.value = settings.minFloor;
+      maxFloorInput.value = settings.maxFloor;
+      unitsInput.value = settings.units.join(', ');
+      parkingCountInput.value = settings.parkingCount;
+      excludedParkingInput.value = settings.excludedParkingStr || "";
+      soundToggle.checked = settings.soundEnabled;
+    }
 
-    updateCounters();
+    document.getElementById("openSettingsBtn").addEventListener("click", () => {
+      populateModal();
+      settingsModal.classList.remove("hidden");
+    });
+
+    function closeSettings() {
+      settingsModal.classList.add("hidden");
+    }
+
+    document.getElementById("closeSettingsBtn").addEventListener("click", closeSettings);
+    document.getElementById("closeModalBtn").addEventListener("click", closeSettings);
+
+    document.getElementById("resetDefaultsBtn").addEventListener("click", () => {
+      if(confirm("確定要恢復原廠預設值嗎？這將會更新設定。")) {
+        saveSettings(defaultSettings);
+        populateModal();
+      }
+    });
+
+    document.getElementById("saveSettingsBtn").addEventListener("click", () => {
+      const minF = parseInt(minFloorInput.value);
+      const maxF = parseInt(maxFloorInput.value);
+      const parkingC = parseInt(parkingCountInput.value);
+      const unitsArr = unitsInput.value.split(',').map(s => s.trim()).filter(s => s.length > 0);
+      
+      if (isNaN(minF) || isNaN(maxF) || minF < 1 || maxF < minF) {
+        alert("樓層設定不正確！起始樓層必須小於或等於最高樓層。");
+        return;
+      }
+      if (unitsArr.length === 0) {
+        alert("必須輸入至少一個戶別代碼！");
+        return;
+      }
+      if (isNaN(parkingC) || parkingC < 1) {
+        alert("總車位數量必須大於 0！");
+        return;
+      }
+
+      const newSettings = {
+        minFloor: minF,
+        maxFloor: maxF,
+        units: unitsArr,
+        parkingCount: parkingC,
+        excludedParkingStr: excludedParkingInput.value.trim(),
+        soundEnabled: soundToggle.checked
+      };
+
+      saveSettings(newSettings);
+      
+      // Ask to reset state with new configuration
+      if (confirm("儲存設定成功！是否要依照新設定重置當前的抽籤狀態？\n(注意：不重置可能導致剩餘名單數據與新設定不一致！)")) {
+        initializeNewState(newSettings);
+      } else {
+        // Just save setting and trigger UI update
+        saveState();
+      }
+      
+      closeSettings();
+      renderUI();
+    });
+
+    // Event Listeners for Operations
+    document.getElementById("drawHouseholdBtn").addEventListener("click", drawHousehold);
+    document.getElementById("drawParkingBtn").addEventListener("click", drawParking);
+    document.getElementById("resetAllBtn").addEventListener("click", resetAll);
+
+    // Initial Load
+    loadState();
+    renderUI();
   </script>
 </body>
 </html>

@@ -1,0 +1,855 @@
+<!--
+Author: Jason Ko
+Mail: phelpske.dev at gmail dot com
+Last updated: August 16, 2026
+-->
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>🏍️ 機車車位抽籤系統 - 批次模式</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts Outfit & Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    }
+    .font-outfit {
+      font-family: 'Outfit', sans-serif;
+    }
+    /* Glow borders and effects */
+    .glow-indigo:hover {
+      box-shadow: 0 0 20px rgba(99, 102, 241, 0.4);
+    }
+    .glow-emerald:hover {
+      box-shadow: 0 0 20px rgba(16, 185, 129, 0.4);
+    }
+    /* Custom scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(15, 23, 42, 0.3);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(148, 163, 184, 0.3);
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(148, 163, 184, 0.5);
+    }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col">
+
+  <!-- Top Navigation Header -->
+  <header class="border-b border-slate-900 bg-slate-950/80 backdrop-blur-md sticky top-0 z-40">
+    <div class="max-w-7xl mx-auto px-6 py-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+      <div class="flex items-center gap-3">
+        <div class="bg-gradient-to-tr from-indigo-500 to-purple-600 p-2.5 rounded-xl shadow-lg shadow-indigo-500/20">
+          <span class="text-2xl">🏍️</span>
+        </div>
+        <div>
+          <h1 class="text-xl font-bold font-outfit tracking-tight bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">機車車位抽籤系統</h1>
+          <p class="text-xs text-slate-400">專為社區大樓設計的公平車位抽選工具</p>
+        </div>
+      </div>
+      
+      <!-- Nav Tabs -->
+      <div class="flex items-center bg-slate-900/80 p-1.5 rounded-xl border border-slate-800/60">
+        <a href="index.html" class="px-4 py-2 rounded-lg text-sm font-medium transition-all text-slate-400 hover:text-slate-200">
+          🔄 單步抽籤
+        </a>
+        <a href="batch.html" class="px-4 py-2 rounded-lg text-sm font-medium transition-all bg-indigo-600 text-white shadow-md shadow-indigo-600/10">
+          ⚡ 批次抽籤
+        </a>
+      </div>
+
+      <!-- Settings Action -->
+      <button id="openSettingsBtn" class="flex items-center gap-2 px-4 py-2 bg-slate-900 border border-slate-800 rounded-xl hover:bg-slate-800 text-sm font-medium transition-all text-slate-300">
+        ⚙️ 系統設定
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Content Container -->
+  <main class="flex-1 max-w-7xl w-full mx-auto p-6 flex flex-col lg:flex-row gap-8">
+
+    <!-- Left Column: Operations -->
+    <div class="flex-1 flex flex-col gap-6">
+      
+      <!-- Quick Counter Cards -->
+      <div class="grid grid-cols-2 sm:grid-cols-3 gap-4">
+        <div class="bg-slate-900/40 border border-slate-900 rounded-2xl p-4 flex flex-col justify-between backdrop-blur-sm">
+          <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">剩餘住戶</span>
+          <span id="remainingHouseholds" class="text-3xl font-extrabold font-outfit text-indigo-400 mt-2">--</span>
+        </div>
+        <div class="bg-slate-900/40 border border-slate-900 rounded-2xl p-4 flex flex-col justify-between backdrop-blur-sm">
+          <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">剩餘車位</span>
+          <span id="remainingParking" class="text-3xl font-extrabold font-outfit text-emerald-400 mt-2">--</span>
+        </div>
+        <div class="col-span-2 sm:col-span-1 bg-slate-900/40 border border-slate-900 rounded-2xl p-4 flex flex-col justify-between backdrop-blur-sm">
+          <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">已分配進度</span>
+          <div class="flex items-baseline gap-1 mt-2">
+            <span id="matchedCount" class="text-3xl font-extrabold font-outfit text-purple-400">--</span>
+            <span class="text-slate-500 text-xs">/</span>
+            <span id="totalHouseholdsCount" class="text-slate-500 text-xs">-- 戶</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Control Panel -->
+      <div class="bg-slate-900/60 border border-slate-800/80 rounded-3xl p-6 md:p-8 flex flex-col gap-6 shadow-2xl relative overflow-hidden backdrop-blur-md">
+        
+        <!-- Gradient Accent Background Glow -->
+        <div class="absolute -top-24 -left-24 w-48 h-48 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none"></div>
+        <div class="absolute -bottom-24 -right-24 w-48 h-48 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none"></div>
+
+        <h2 class="text-lg font-bold font-outfit text-slate-200 border-b border-slate-800 pb-3 flex items-center gap-2">
+          <span>⚡</span> 批次控制中心
+        </h2>
+
+        <!-- Step 1: Generate Household Sequence -->
+        <div class="flex flex-col gap-3">
+          <div class="flex items-center justify-between">
+            <span class="text-sm font-semibold text-slate-300 flex items-center gap-2">
+              <span class="w-5 h-5 rounded-full bg-indigo-500/10 border border-indigo-500/30 text-indigo-400 text-xs flex items-center justify-center font-bold">1</span>
+              階段一：產生住戶順序
+            </span>
+            <span id="step1Status" class="text-xs text-slate-500 font-medium">尚未產生</span>
+          </div>
+          <button id="generateSeqBtn" class="w-full bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 text-white font-bold py-3.5 px-6 rounded-2xl transition-all transform hover:-translate-y-0.5 shadow-lg shadow-indigo-600/15 flex items-center justify-center gap-2">
+            <span>🎲 產生全部戶號隨機順序</span>
+          </button>
+        </div>
+
+        <!-- Step 2: Auto Allocate Settings and Buttons -->
+        <div class="flex flex-col gap-4 border-t border-slate-800/50 pt-5">
+          <span class="text-sm font-semibold text-slate-300 flex items-center gap-2">
+            <span class="w-5 h-5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs flex items-center justify-center font-bold">2</span>
+            階段二：自動分配車位
+          </span>
+
+          <!-- Delay Setting Row -->
+          <div class="flex items-center justify-between gap-4 bg-slate-950/40 p-4 border border-slate-800 rounded-2xl">
+            <div>
+              <span class="text-sm font-semibold text-slate-300 block">分配時間間隔 (秒)</span>
+              <span class="text-xs text-slate-500">每抽選一格車位後，暫停指定時間</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <input type="number" id="intervalInput" min="0.1" max="10" step="0.1" value="1.5" class="w-20 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-center text-slate-200 font-bold focus:outline-none focus:border-emerald-500 font-mono">
+              <span class="text-sm text-slate-400">秒</span>
+            </div>
+          </div>
+
+          <!-- Progress Action Buttons -->
+          <div class="flex flex-wrap gap-3 mt-2">
+            <!-- Start/Resume Button -->
+            <button id="startAutoBtn" disabled class="flex-1 min-w-[140px] bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-500 hover:to-emerald-600 disabled:from-slate-800 disabled:to-slate-800 disabled:text-slate-650 disabled:cursor-not-allowed text-white font-bold py-3.5 px-6 rounded-2xl transition-all transform hover:-translate-y-0.5 shadow-lg shadow-emerald-600/15 disabled:shadow-none flex items-center justify-center gap-2">
+              <span id="startBtnText">開始自動分配</span> ▶️
+            </button>
+            
+            <!-- Pause Button -->
+            <button id="pauseAutoBtn" disabled class="px-5 bg-slate-850 hover:bg-slate-800 disabled:bg-slate-900 disabled:text-slate-700 text-slate-300 hover:text-white font-semibold rounded-2xl transition-all flex items-center justify-center gap-2">
+              <span>暫停</span> ⏸️
+            </button>
+
+            <!-- Reset Button -->
+            <button id="resetAllBtn" class="px-5 bg-slate-900 border border-slate-800 hover:bg-slate-800 text-slate-400 hover:text-white font-semibold rounded-2xl transition-all flex items-center justify-center gap-2">
+              <span>重置</span> 🔄
+            </button>
+          </div>
+        </div>
+
+        <!-- Live Status Visualizer -->
+        <div id="liveVisualizer" class="bg-slate-950/60 border border-slate-900 rounded-2xl p-6 flex flex-col items-center justify-center text-center min-h-[160px] relative hidden">
+          <span class="absolute top-4 left-4 text-xs font-semibold text-slate-500 uppercase tracking-widest">當前分配進度</span>
+          <div class="flex flex-col gap-2 mt-2">
+            <div id="visualizerHousehold" class="text-3xl font-extrabold font-outfit text-indigo-400">--</div>
+            <div class="text-slate-500 font-mono">➜</div>
+            <div id="visualizerParking" class="text-3xl font-extrabold font-outfit text-emerald-400">--</div>
+          </div>
+          <div id="visualizerProgressBar" class="absolute bottom-0 left-0 h-1 bg-gradient-to-r from-indigo-500 to-emerald-500 transition-all duration-100" style="width: 0%"></div>
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- Right Column: Full Interactive List -->
+    <aside class="w-full lg:w-[480px] shrink-0 flex flex-col bg-slate-900/60 border border-slate-800/80 rounded-3xl p-6 shadow-xl backdrop-blur-md h-[680px]">
+      
+      <div class="flex justify-between items-center mb-4">
+        <div>
+          <h3 class="font-bold text-slate-200 flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-indigo-500"></span>
+            住戶順序與車位分配表
+          </h3>
+          <p class="text-xs text-slate-550 mt-1">顯示已抽出的住戶順序及其分配到的車位</p>
+        </div>
+        <span id="seqListCount" class="text-xs bg-slate-800 text-slate-400 px-2.5 py-1 rounded-full font-mono font-bold">0 / 0</span>
+      </div>
+
+      <!-- Header Row -->
+      <div class="grid grid-cols-12 bg-slate-950/80 border border-slate-900 px-4 py-2.5 rounded-xl text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 font-mono">
+        <div class="col-span-3">序號</div>
+        <div class="col-span-4">住戶戶號</div>
+        <div class="col-span-5 text-right">獲配車位</div>
+      </div>
+
+      <!-- List Items Container -->
+      <div class="flex-1 overflow-y-auto pr-1">
+        <div id="seqTableContainer" class="space-y-1.5">
+          <!-- Dynamic row items -->
+          <div id="emptyTableMessage" class="text-center text-slate-650 py-24 text-sm">
+            請點擊左側「產生隨機順序」按鈕以生成名單 📋
+          </div>
+        </div>
+      </div>
+
+    </aside>
+
+  </main>
+
+  <!-- Settings Modal -->
+  <div id="settingsModal" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+    <div class="bg-slate-900 border border-slate-800 w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden transform transition-all flex flex-col max-h-[90vh]">
+      
+      <!-- Modal Header -->
+      <div class="p-6 border-b border-slate-800 flex justify-between items-center">
+        <h3 class="text-lg font-bold font-outfit text-slate-100 flex items-center gap-2">
+          <span>⚙️</span> 系統設定
+        </h3>
+        <button id="closeSettingsBtn" class="text-slate-400 hover:text-white transition-all text-xl font-semibold">×</button>
+      </div>
+
+      <!-- Modal Body (Scrollable) -->
+      <div class="p-6 overflow-y-auto flex-1 flex flex-col gap-5">
+        
+        <!-- Floor Config -->
+        <div>
+          <label class="block text-sm font-semibold text-slate-300 mb-2">樓層範圍設定</label>
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <span class="text-xs text-slate-500">起始樓層</span>
+              <input type="number" id="minFloorInput" min="1" max="100" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-slate-200 focus:outline-none focus:border-indigo-500 font-mono mt-1">
+            </div>
+            <div>
+              <span class="text-xs text-slate-500">最高樓層</span>
+              <input type="number" id="maxFloorInput" min="1" max="100" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-slate-200 focus:outline-none focus:border-indigo-500 font-mono mt-1">
+            </div>
+          </div>
+        </div>
+
+        <!-- Unit Codes -->
+        <div>
+          <label class="block text-sm font-semibold text-slate-300 mb-1">戶別代碼設定</label>
+          <span class="text-xs text-slate-500 block mb-2">請以英文逗號 (,) 分隔各戶別</span>
+          <textarea id="unitsInput" rows="2" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-slate-200 focus:outline-none focus:border-indigo-500 font-mono resize-none"></textarea>
+        </div>
+
+        <!-- Parking Spot Count -->
+        <div>
+          <label class="block text-sm font-semibold text-slate-300 mb-2">總車位數</label>
+          <input type="number" id="parkingCountInput" min="1" max="1000" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-slate-200 focus:outline-none focus:border-indigo-500 font-mono">
+        </div>
+
+        <!-- Excluded Parking Spots -->
+        <div>
+          <label class="block text-sm font-semibold text-slate-300 mb-1">排除的車位編號（特殊車位）</label>
+          <span class="text-xs text-slate-500 block mb-2">請以英文逗號 (,) 分隔車位，支援範圍 (例: 5, 12, 100-105)</span>
+          <input type="text" id="excludedParkingInput" placeholder="例如：5, 12, 100-105" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-slate-200 focus:outline-none focus:border-indigo-500 font-mono">
+        </div>
+
+        <!-- Sound Config -->
+        <div class="flex items-center justify-between bg-slate-950/40 p-4 border border-slate-800/80 rounded-xl">
+          <div>
+            <span class="block text-sm font-semibold text-slate-300">抽選音效</span>
+            <span class="text-xs text-slate-500">在抽籤進行中播放動態電子音效</span>
+          </div>
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" id="soundToggle" class="sr-only peer" checked>
+            <div class="w-11 h-6 bg-slate-850 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-slate-400 after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600 peer-checked:after:bg-white"></div>
+          </label>
+        </div>
+
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="p-6 border-t border-slate-800 bg-slate-950/40 flex justify-between gap-4">
+        <button id="resetDefaultsBtn" class="px-4 py-2 bg-slate-850 text-slate-400 hover:text-white rounded-xl text-sm font-medium transition-all">
+          恢復預設值
+        </button>
+        <div class="flex gap-3">
+          <button id="closeModalBtn" class="px-4 py-2 bg-slate-800 text-slate-300 hover:bg-slate-700 rounded-xl text-sm font-medium transition-all">
+            取消
+          </button>
+          <button id="saveSettingsBtn" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-sm font-medium shadow-lg shadow-indigo-600/20 transition-all">
+            儲存變更
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <footer class="mt-auto border-t border-slate-900 bg-slate-950/30 py-6 text-center text-xs text-slate-600">
+    <div>機車車位抽籤系統 © 2026. Made with Jason for 鑫悅</div>
+  </footer>
+
+  <script>
+    // Audio synthesizer helper using Web Audio API
+    let audioCtx = null;
+    function playSound(type) {
+      const settings = getSettings();
+      if (!settings.soundEnabled) return;
+      
+      try {
+        if (!audioCtx) {
+          audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        if (audioCtx.state === 'suspended') {
+          audioCtx.resume();
+        }
+        
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        
+        const now = audioCtx.currentTime;
+        
+        if (type === 'roll') {
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(220, now);
+          osc.frequency.exponentialRampToValueAtTime(380, now + 0.08);
+          gain.gain.setValueAtTime(0.08, now);
+          gain.gain.linearRampToValueAtTime(0.01, now + 0.08);
+          osc.start(now);
+          osc.stop(now + 0.08);
+        } else if (type === 'success') {
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(523.25, now); // C5
+          osc.frequency.setValueAtTime(659.25, now + 0.12); // E5
+          osc.frequency.setValueAtTime(783.99, now + 0.24); // G5
+          gain.gain.setValueAtTime(0.12, now);
+          gain.gain.exponentialRampToValueAtTime(0.01, now + 0.45);
+          osc.start(now);
+          osc.stop(now + 0.45);
+        } else if (type === 'reset') {
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(320, now);
+          osc.frequency.linearRampToValueAtTime(100, now + 0.25);
+          gain.gain.setValueAtTime(0.08, now);
+          gain.gain.linearRampToValueAtTime(0.01, now + 0.25);
+          osc.start(now);
+          osc.stop(now + 0.25);
+        } else if (type === 'warning') {
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(140, now);
+          gain.gain.setValueAtTime(0.12, now);
+          gain.gain.linearRampToValueAtTime(0.01, now + 0.2);
+          osc.start(now);
+          osc.stop(now + 0.2);
+        }
+      } catch (err) {
+        console.warn("Audio playback failed: ", err);
+      }
+    }
+
+    // Default settings
+    const defaultSettings = {
+      minFloor: 2,
+      maxFloor: 23,
+      units: ['A1','A2','A3','A5','A6','A7','A8','A9','A11'],
+      parkingCount: 202,
+      excludedParkingStr: "",
+      soundEnabled: true
+    };
+
+    // Parser for excluded parking spots
+    function parseExcludedParking(str) {
+      const excluded = new Set();
+      if (!str) return excluded;
+      const parts = str.split(',');
+      parts.forEach(part => {
+        const trimmed = part.trim();
+        if (trimmed.includes('-')) {
+          const rangeParts = trimmed.split('-');
+          if (rangeParts.length === 2) {
+            const start = parseInt(rangeParts[0]);
+            const end = parseInt(rangeParts[1]);
+            if (!isNaN(start) && !isNaN(end) && start <= end) {
+              for (let i = start; i <= end; i++) {
+                excluded.add(i);
+              }
+            }
+          }
+        } else {
+          const num = parseInt(trimmed);
+          if (!isNaN(num)) {
+            excluded.add(num);
+          }
+        }
+      });
+      return excluded;
+    }
+
+    // Settings retrieval
+    function getSettings() {
+      const saved = localStorage.getItem('lottery_settings');
+      if (saved) {
+        try {
+          return JSON.parse(saved);
+        } catch(e) {
+          return defaultSettings;
+        }
+      }
+      return defaultSettings;
+    }
+
+    function saveSettings(settings) {
+      localStorage.setItem('lottery_settings', JSON.stringify(settings));
+    }
+
+    // Generate static pool of households based on settings
+    function generateHouseholds(settings) {
+      const households = [];
+      const minF = parseInt(settings.minFloor);
+      const maxF = parseInt(settings.maxFloor);
+      for (let f = minF; f <= maxF; f++) {
+        settings.units.forEach(u => {
+          households.push(`${u}-${f}F`);
+        });
+      }
+      return households;
+    }
+
+    // Batch Lottery States
+    let state = {
+      householdsOrder: [], // shuffled array of households, e.g. ["A3-5F", "A1-12F", ...]
+      assignedParking: [], // array of same size, filled with parking numbers or null
+      parkingPool: [],     // remaining parking lots to draw
+      currentIndex: 0,     // index of household currently being assigned
+      isRunning: false,    // if auto-allocation timer is running
+      isPaused: false      // if auto-allocation was paused
+    };
+
+    function loadState() {
+      const saved = localStorage.getItem('lottery_state_batch');
+      if (saved) {
+        try {
+          state = JSON.parse(saved);
+        } catch(e) {
+          resetStateVariables();
+        }
+      } else {
+        resetStateVariables();
+      }
+    }
+
+    function saveState() {
+      localStorage.setItem('lottery_state_batch', JSON.stringify(state));
+    }
+
+    function resetStateVariables() {
+      state.householdsOrder = [];
+      state.assignedParking = [];
+      state.parkingPool = [];
+      state.currentIndex = 0;
+      state.isRunning = false;
+      state.isPaused = false;
+      saveState();
+    }
+
+    // Fisher-Yates Shuffle
+    function shuffle(arr) {
+      for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+    }
+
+    // DOM Elements
+    const remainingHouseholds = document.getElementById("remainingHouseholds");
+    const remainingParking = document.getElementById("remainingParking");
+    const matchedCount = document.getElementById("matchedCount");
+    const totalHouseholdsCount = document.getElementById("totalHouseholdsCount");
+    const generateSeqBtn = document.getElementById("generateSeqBtn");
+    const step1Status = document.getElementById("step1Status");
+    const intervalInput = document.getElementById("intervalInput");
+    const startAutoBtn = document.getElementById("startAutoBtn");
+    const startBtnText = document.getElementById("startBtnText");
+    const pauseAutoBtn = document.getElementById("pauseAutoBtn");
+    const resetAllBtn = document.getElementById("resetAllBtn");
+    const seqTableContainer = document.getElementById("seqTableContainer");
+    const seqListCount = document.getElementById("seqListCount");
+    const liveVisualizer = document.getElementById("liveVisualizer");
+    const visualizerHousehold = document.getElementById("visualizerHousehold");
+    const visualizerParking = document.getElementById("visualizerParking");
+    const visualizerProgressBar = document.getElementById("visualizerProgressBar");
+
+    // Modal Elements
+    const settingsModal = document.getElementById("settingsModal");
+    const minFloorInput = document.getElementById("minFloorInput");
+    const maxFloorInput = document.getElementById("maxFloorInput");
+    const unitsInput = document.getElementById("unitsInput");
+    const parkingCountInput = document.getElementById("parkingCountInput");
+    const excludedParkingInput = document.getElementById("excludedParkingInput");
+    const soundToggle = document.getElementById("soundToggle");
+
+    // UI Render
+    function renderUI() {
+      // Calculate Stats
+      const totalH = state.householdsOrder.length;
+      const matched = state.assignedParking.filter(x => x !== null).length;
+      const remainingH = totalH - matched;
+      
+      remainingHouseholds.textContent = totalH > 0 ? remainingH : "--";
+      remainingParking.textContent = totalH > 0 ? state.parkingPool.length : "--";
+      matchedCount.textContent = totalH > 0 ? matched : "--";
+      totalHouseholdsCount.textContent = totalH > 0 ? `${totalH} 戶` : "-- 戶";
+      seqListCount.textContent = `${matched} / ${totalH}`;
+
+      // Status text for step 1
+      if (totalH > 0) {
+        step1Status.textContent = "已產生";
+        step1Status.className = "text-xs text-indigo-400 font-semibold";
+        generateSeqBtn.disabled = true;
+        generateSeqBtn.className = "w-full bg-slate-900 border border-slate-800 text-slate-550 font-bold py-3.5 px-6 rounded-2xl cursor-not-allowed";
+        
+        // Enable Auto-draw button if not fully completed
+        if (matched < totalH && state.parkingPool.length > 0) {
+          startAutoBtn.disabled = state.isRunning && !state.isPaused;
+        } else {
+          startAutoBtn.disabled = true;
+        }
+      } else {
+        step1Status.textContent = "尚未產生";
+        step1Status.className = "text-xs text-slate-500 font-medium";
+        generateSeqBtn.disabled = false;
+        generateSeqBtn.className = "w-full bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 text-white font-bold py-3.5 px-6 rounded-2xl transition-all transform hover:-translate-y-0.5 shadow-lg shadow-indigo-600/15 flex items-center justify-center gap-2";
+        startAutoBtn.disabled = true;
+      }
+
+      // Control Buttons during drawing
+      if (state.isRunning) {
+        if (state.isPaused) {
+          startAutoBtn.disabled = false;
+          startBtnText.textContent = "繼續自動分配";
+          pauseAutoBtn.disabled = true;
+        } else {
+          startAutoBtn.disabled = true;
+          startBtnText.textContent = "自動分配中...";
+          pauseAutoBtn.disabled = false;
+        }
+        intervalInput.disabled = true;
+      } else {
+        startBtnText.textContent = "開始自動分配";
+        pauseAutoBtn.disabled = true;
+        intervalInput.disabled = false;
+      }
+
+      // Render Table List
+      if (totalH === 0) {
+        seqTableContainer.innerHTML = `
+          <div id="emptyTableMessage" class="text-center text-slate-650 py-24 text-sm">
+            請點擊左側「產生隨機順序」按鈕以生成名單 📋
+          </div>
+        `;
+      } else {
+        seqTableContainer.innerHTML = "";
+        state.householdsOrder.forEach((household, index) => {
+          const isCurrent = state.isRunning && !state.isPaused && index === state.currentIndex;
+          const parkingVal = state.assignedParking[index];
+          
+          const row = document.createElement("div");
+          row.id = `row-${index}`;
+          
+          let rowClass = "grid grid-cols-12 items-center px-4 py-3 rounded-xl text-sm font-mono border transition-all duration-200 ";
+          
+          if (isCurrent) {
+            rowClass += "bg-indigo-950/20 border-indigo-500/80 shadow-md shadow-indigo-500/5 scale-[1.01] animate-pulse";
+          } else if (parkingVal !== null) {
+            rowClass += "bg-slate-900/30 border-slate-900/40 text-slate-300";
+          } else {
+            rowClass += "bg-slate-950/20 border-slate-900/20 text-slate-500";
+          }
+          
+          row.className = rowClass;
+          
+          let parkingText = "";
+          if (isCurrent) {
+            parkingText = `<span class="inline-flex items-center text-indigo-400 font-semibold gap-1 text-xs bg-indigo-900/30 px-2 py-0.5 rounded border border-indigo-550/30">抽選中...</span>`;
+          } else if (parkingVal !== null) {
+            parkingText = `<span class="text-emerald-400 font-extrabold">車位 ${parkingVal}</span>`;
+          } else {
+            parkingText = `<span class="text-slate-650 text-xs">等待配對</span>`;
+          }
+          
+          row.innerHTML = `
+            <div class="col-span-3 font-semibold ${isCurrent ? 'text-indigo-400' : 'text-slate-500'}">${index + 1}</div>
+            <div class="col-span-4 font-bold ${isCurrent ? 'text-indigo-300 text-base' : parkingVal !== null ? 'text-indigo-300/80' : 'text-slate-400'}">${household}</div>
+            <div class="col-span-5 text-right font-semibold">${parkingText}</div>
+          `;
+          seqTableContainer.appendChild(row);
+        });
+      }
+    }
+
+    // Scroll active row into view smoothly
+    function scrollActiveRowIntoView() {
+      const activeRow = document.getElementById(`row-${state.currentIndex}`);
+      if (activeRow) {
+        activeRow.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+    }
+
+    // Phase 1 Action: Generate Random Household List
+    function generateSequence() {
+      const settings = getSettings();
+      const rawHouseholds = generateHouseholds(settings);
+      
+      if (rawHouseholds.length === 0) {
+        playSound('warning');
+        alert("住戶清單為空，請檢查設定中的樓層與戶別！");
+        return;
+      }
+      
+      playSound('success');
+      state.householdsOrder = [...rawHouseholds];
+      shuffle(state.householdsOrder);
+      
+      // Initialize matching arrays
+      state.assignedParking = Array.from({ length: state.householdsOrder.length }, () => null);
+      
+      const totalCount = parseInt(settings.parkingCount);
+      const excludedSet = parseExcludedParking(settings.excludedParkingStr);
+      const pPool = [];
+      for (let i = 1; i <= totalCount; i++) {
+        if (!excludedSet.has(i)) {
+          pPool.push(i);
+        }
+      }
+      state.parkingPool = pPool;
+      
+      state.currentIndex = 0;
+      state.isRunning = false;
+      state.isPaused = false;
+      
+      saveState();
+      renderUI();
+    }
+
+    // Timer and Runner Logic for Auto Allocation
+    let allocationTimeout = null;
+    let visualInterval = null;
+
+    function startAutoAllocation() {
+      if (state.householdsOrder.length === 0) return;
+      if (state.currentIndex >= state.householdsOrder.length) {
+        playSound('warning');
+        alert("所有住戶均已分配完畢！");
+        return;
+      }
+      if (state.parkingPool.length === 0) {
+        playSound('warning');
+        alert("車位已全數發放完畢！");
+        return;
+      }
+
+      state.isRunning = true;
+      state.isPaused = false;
+      saveState();
+
+      // Show visualizer board
+      liveVisualizer.classList.remove("hidden");
+      
+      runAllocationStep();
+    }
+
+    function runAllocationStep() {
+      if (!state.isRunning || state.isPaused) return;
+
+      const idx = state.currentIndex;
+      const totalH = state.householdsOrder.length;
+      if (idx >= totalH || state.parkingPool.length === 0) {
+        // Complete
+        state.isRunning = false;
+        state.isPaused = false;
+        saveState();
+        playSound('success');
+        renderUI();
+        liveVisualizer.classList.add("hidden");
+        alert("🎉 車位批次分配作業已圓滿完成！");
+        return;
+      }
+
+      const household = state.householdsOrder[idx];
+      visualizerHousehold.textContent = `${idx + 1}. ${household}`;
+      renderUI();
+      scrollActiveRowIntoView();
+
+      // Get interval setting in milliseconds
+      const seconds = parseFloat(intervalInput.value) || 1.5;
+      const durationMs = Math.max(200, seconds * 1000); // at least 200ms
+
+      // Start progress bar animation
+      let startTime = Date.now();
+      visualizerProgressBar.style.width = "0%";
+      
+      // Random rolling numbers for parking during interval
+      if (visualInterval) clearInterval(visualInterval);
+      
+      // Choose a fixed roll limit (visual speed)
+      visualInterval = setInterval(() => {
+        playSound('roll');
+        const randIndex = Math.floor(Math.random() * state.parkingPool.length);
+        const tempPark = state.parkingPool[randIndex];
+        visualizerParking.textContent = `車位 ${tempPark}`;
+        
+        // Progress bar updates
+        const elapsed = Date.now() - startTime;
+        const pct = Math.min(100, (elapsed / durationMs) * 100);
+        visualizerProgressBar.style.width = `${pct}%`;
+      }, 60);
+
+      // Timeout to lock the result
+      if (allocationTimeout) clearTimeout(allocationTimeout);
+      
+      allocationTimeout = setTimeout(() => {
+        clearInterval(visualInterval);
+        
+        // Pick and pop actual parking lot
+        shuffle(state.parkingPool);
+        const allocatedParking = state.parkingPool.pop();
+        
+        // Lock state
+        state.assignedParking[idx] = allocatedParking;
+        state.currentIndex = idx + 1;
+        saveState();
+
+        playSound('success');
+        
+        visualizerParking.textContent = `車位 ${allocatedParking}`;
+        visualizerProgressBar.style.width = "100%";
+        
+        // Wait a tiny moment (e.g. 100ms) to let user see the final score, then proceed
+        setTimeout(() => {
+          if (state.isRunning && !state.isPaused) {
+            runAllocationStep();
+          }
+        }, 150);
+
+      }, durationMs);
+    }
+
+    function pauseAutoAllocation() {
+      state.isPaused = true;
+      saveState();
+
+      if (allocationTimeout) clearTimeout(allocationTimeout);
+      if (visualInterval) clearInterval(visualInterval);
+      
+      renderUI();
+      playSound('warning');
+    }
+
+    function resetAll() {
+      if (allocationTimeout) clearTimeout(allocationTimeout);
+      if (visualInterval) clearInterval(visualInterval);
+      
+      playSound('reset');
+      if (!confirm("確定要重置目前批次分配的狀態嗎？所有產生的順序與紀錄將會清空。")) return;
+      
+      resetStateVariables();
+      renderUI();
+      liveVisualizer.classList.add("hidden");
+    }
+
+    // Modal Settings Controls
+    function populateModal() {
+      const settings = getSettings();
+      minFloorInput.value = settings.minFloor;
+      maxFloorInput.value = settings.maxFloor;
+      unitsInput.value = settings.units.join(', ');
+      parkingCountInput.value = settings.parkingCount;
+      excludedParkingInput.value = settings.excludedParkingStr || "";
+      soundToggle.checked = settings.soundEnabled;
+    }
+
+    document.getElementById("openSettingsBtn").addEventListener("click", () => {
+      populateModal();
+      settingsModal.classList.remove("hidden");
+    });
+
+    function closeSettings() {
+      settingsModal.classList.add("hidden");
+    }
+
+    document.getElementById("closeSettingsBtn").addEventListener("click", closeSettings);
+    document.getElementById("closeModalBtn").addEventListener("click", closeSettings);
+
+    document.getElementById("resetDefaultsBtn").addEventListener("click", () => {
+      if (confirm("確定要恢復原廠預設值嗎？這將會更新設定。")) {
+        saveSettings(defaultSettings);
+        populateModal();
+      }
+    });
+
+    document.getElementById("saveSettingsBtn").addEventListener("click", () => {
+      const minF = parseInt(minFloorInput.value);
+      const maxF = parseInt(maxFloorInput.value);
+      const parkingC = parseInt(parkingCountInput.value);
+      const unitsArr = unitsInput.value.split(',').map(s => s.trim()).filter(s => s.length > 0);
+      
+      if (isNaN(minF) || isNaN(maxF) || minF < 1 || maxF < minF) {
+        alert("樓層設定不正確！起始樓層必須小於或等於最高樓層。");
+        return;
+      }
+      if (unitsArr.length === 0) {
+        alert("必須輸入至少一個戶別代碼！");
+        return;
+      }
+      if (isNaN(parkingC) || parkingC < 1) {
+        alert("總車位數量必須大於 0！");
+        return;
+      }
+
+      const newSettings = {
+        minFloor: minF,
+        maxFloor: maxF,
+        units: unitsArr,
+        parkingCount: parkingC,
+        excludedParkingStr: excludedParkingInput.value.trim(),
+        soundEnabled: soundToggle.checked
+      };
+
+      saveSettings(newSettings);
+      
+      // Request state reset
+      if (confirm("儲存設定成功！是否要依照新設定重置批次抽選狀態？\n(批次抽籤需要重新產生隨機順序！)")) {
+        resetStateVariables();
+        liveVisualizer.classList.add("hidden");
+      }
+      
+      closeSettings();
+      renderUI();
+    });
+
+    // Control Bindings
+    generateSeqBtn.addEventListener("click", generateSequence);
+    startAutoBtn.addEventListener("click", startAutoAllocation);
+    pauseAutoBtn.addEventListener("click", pauseAutoAllocation);
+    resetAllBtn.addEventListener("click", resetAll);
+
+    // Initial Load
+    loadState();
+    renderUI();
+  </script>
+</body>
+</html>
