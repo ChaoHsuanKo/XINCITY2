@@ -55,7 +55,11 @@ Last updated: August 16, 2026
         </div>
         <div>
           <h1 class="text-xl font-bold font-outfit tracking-tight bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">機車車位抽籤系統</h1>
-          <p class="text-xs text-slate-400">專為社區大樓設計的公平車位抽選工具</p>
+          <div class="flex flex-wrap items-center gap-x-2 text-xs text-slate-400 mt-0.5">
+            <span>專為社區大樓設計的公平車位抽選工具</span>
+            <span class="text-slate-800 hidden sm:inline">|</span>
+            <span id="headerClock" class="font-mono text-indigo-400 font-semibold bg-indigo-950/30 px-1.5 py-0.5 rounded border border-indigo-900/30"></span>
+          </div>
         </div>
       </div>
       
@@ -1067,6 +1071,22 @@ Last updated: August 16, 2026
     pauseAutoBtn.addEventListener("click", pauseAutoAllocation);
     resetAllBtn.addEventListener("click", resetAll);
     exportExcelBtn.addEventListener("click", exportToExcel);
+
+    // Real-time Header Clock
+    function updateClock() {
+      const clockEl = document.getElementById("headerClock");
+      if (!clockEl) return;
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, '0');
+      const date = String(now.getDate()).padStart(2, '0');
+      const hours = String(now.getHours()).padStart(2, '0');
+      const minutes = String(now.getMinutes()).padStart(2, '0');
+      const seconds = String(now.getSeconds()).padStart(2, '0');
+      clockEl.textContent = `${year}-${month}-${date} ${hours}:${minutes}:${seconds}`;
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
 
     // Initial Load
     const initialSettings = getSettings();
