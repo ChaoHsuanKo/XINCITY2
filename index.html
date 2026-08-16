@@ -133,7 +133,8 @@ Last updated: August 16, 2026
             <div id="householdDisplay" class="text-4xl md:text-5xl font-extrabold font-outfit text-indigo-400 tracking-wide transition-all duration-100">
               等待抽選
             </div>
-            <div id="householdStatus" class="text-xs text-indigo-400/50 mt-4 font-medium uppercase tracking-wider">STAGE 1</div>
+            <div id="householdAddress" class="text-sm text-slate-450 mt-2 font-medium h-5"></div>
+            <div id="householdStatus" class="text-xs text-indigo-400/50 mt-2 font-medium uppercase tracking-wider">STAGE 1</div>
           </div>
 
           <!-- Current Parking Visual -->
@@ -501,6 +502,36 @@ Last updated: August 16, 2026
       localStorage.setItem('lottery_settings', JSON.stringify(settings));
     }
 
+    // Address parser mapping for households
+    function getHouseholdAddress(household) {
+      if (!household) return "";
+      const match = household.match(/^([A-Za-z0-9]+)-(\d+)F$/);
+      if (!match) return "";
+      
+      const unit = match[1];
+      const floor = match[2];
+      
+      const unitMap = {
+        'A1': '426號之1',
+        'A2': '428號之1',
+        'A3': '428號之2',
+        'A5': '428號之3',
+        'A6': '428號之5',
+        'A7': '428號之6',
+        'A8': '426號之5',
+        'A9': '426號之3',
+        'A11': '426號之2'
+      };
+      
+      const baseAddr = unitMap[unit];
+      if (!baseAddr) return "";
+      
+      const addrMatch = baseAddr.match(/^(\d+號)(之\d+)$/);
+      if (!addrMatch) return `${baseAddr} (${floor}F)`;
+      
+      return `${addrMatch[1]}${floor}樓${addrMatch[2]}`;
+    }
+
     // Generate static pool of households based on settings
     function generateHouseholds(settings) {
       const households = [];
@@ -574,6 +605,7 @@ Last updated: August 16, 2026
     const remainingParking = document.getElementById("remainingParking");
     const matchedCount = document.getElementById("matchedCount");
     const householdDisplay = document.getElementById("householdDisplay");
+    const householdAddress = document.getElementById("householdAddress");
     const parkingDisplay = document.getElementById("parkingDisplay");
     const householdHistory = document.getElementById("householdHistory");
     const parkingHistory = document.getElementById("parkingHistory");
@@ -603,10 +635,12 @@ Last updated: August 16, 2026
         householdDisplay.textContent = state.lastDrawnHousehold;
         householdDisplay.classList.remove("text-slate-500");
         householdDisplay.classList.add("text-indigo-400");
+        householdAddress.textContent = getHouseholdAddress(state.lastDrawnHousehold);
       } else {
         householdDisplay.textContent = "等待抽選";
         householdDisplay.classList.remove("text-indigo-400");
         householdDisplay.classList.add("text-slate-500");
+        householdAddress.textContent = "";
       }
 
       if (state.drawnHouseholds.length > 0 && !state.awaitingParking) {
@@ -624,15 +658,28 @@ Last updated: August 16, 2026
       householdHistory.innerHTML = "";
       state.drawnHouseholds.forEach((item, index) => {
         const li = document.createElement("li");
-        li.className = "flex justify-between border-b border-slate-900 py-1.5 hover:bg-slate-900/30 px-2 rounded transition-all";
-        li.innerHTML = `<span class="text-slate-500">${index + 1}.</span> <span class="text-indigo-300 font-semibold">${item.household}</span>`;
+        li.className = "flex flex-col border-b border-slate-900 py-1.5 hover:bg-slate-900/30 px-2 rounded transition-all";
+        const addr = getHouseholdAddress(item.household);
+        li.innerHTML = `
+          <div class="flex justify-between">
+            <span class="text-slate-500">${index + 1}. <span class="text-indigo-300 font-semibold ml-1">${item.household}</span></span>
+          </div>
+          ${addr ? `<div class="text-[10px] text-slate-500 pl-4">${addr}</div>` : ''}
+        `;
         householdHistory.appendChild(li);
       });
       // If awaiting, show the current drawing household as next numbered item
       if (state.lastDrawnHousehold) {
         const li = document.createElement("li");
-        li.className = "flex justify-between border-b border-slate-900 py-1.5 bg-indigo-950/20 px-2 rounded animate-pulse";
-        li.innerHTML = `<span class="text-indigo-400">${state.drawnHouseholds.length + 1}.</span> <span class="text-indigo-400 font-bold">${state.lastDrawnHousehold}</span> <span class="text-xs px-1.5 py-0.5 rounded bg-indigo-900/50 text-indigo-300">配對中</span>`;
+        li.className = "flex flex-col border-b border-slate-900 py-1.5 bg-indigo-950/20 px-2 rounded animate-pulse";
+        const addr = getHouseholdAddress(state.lastDrawnHousehold);
+        li.innerHTML = `
+          <div class="flex justify-between items-center">
+            <span class="text-indigo-400 font-bold">${state.drawnHouseholds.length + 1}. ${state.lastDrawnHousehold}</span>
+            <span class="text-[10px] px-1.5 py-0.5 rounded bg-indigo-900/50 text-indigo-300">配對中</span>
+          </div>
+          ${addr ? `<div class="text-[10px] text-indigo-400/65 pl-4">${addr}</div>` : ''}
+        `;
         householdHistory.appendChild(li);
       }
 
@@ -642,14 +689,18 @@ Last updated: August 16, 2026
       parkingHistory.innerHTML = "";
       state.drawnHouseholds.forEach((item, index) => {
         const li = document.createElement("li");
-        li.className = "flex justify-between items-center border-b border-slate-900 py-1.5 hover:bg-slate-900/30 px-2 rounded transition-all";
+        li.className = "flex flex-col border-b border-slate-900 py-1.5 hover:bg-slate-900/30 px-2 rounded transition-all";
+        const addr = getHouseholdAddress(item.household);
         li.innerHTML = `
-          <div>
-            <span class="text-slate-500 text-xs mr-1">#${index + 1}</span>
-            <span class="text-indigo-300 font-semibold">${item.household}</span>
+          <div class="flex justify-between items-center">
+            <div>
+              <span class="text-slate-500 text-xs mr-1">#${index + 1}</span>
+              <span class="text-indigo-300 font-semibold">${item.household}</span>
+            </div>
+            <span class="text-slate-500 text-xs mx-2">➜</span>
+            <span class="text-emerald-400 font-bold">車位 ${item.parking}</span>
           </div>
-          <span class="text-slate-500 text-xs">➜</span>
-          <span class="text-emerald-400 font-bold">車位 ${item.parking}</span>
+          ${addr ? `<div class="text-[10px] text-slate-500 pl-5">${addr}</div>` : ''}
         `;
         parkingHistory.appendChild(li);
       });

@@ -178,6 +178,7 @@ Last updated: August 16, 2026
           <span class="absolute top-4 left-4 text-xs font-semibold text-slate-500 uppercase tracking-widest">當前分配進度</span>
           <div class="flex flex-col gap-2 mt-2">
             <div id="visualizerHousehold" class="text-3xl font-extrabold font-outfit text-indigo-400">--</div>
+            <div id="visualizerAddress" class="text-sm text-slate-450 font-medium h-5"></div>
             <div class="text-slate-500 font-mono">➜</div>
             <div id="visualizerParking" class="text-3xl font-extrabold font-outfit text-emerald-400">--</div>
           </div>
@@ -535,6 +536,36 @@ Last updated: August 16, 2026
       localStorage.setItem('lottery_settings', JSON.stringify(settings));
     }
 
+    // Address parser mapping for households
+    function getHouseholdAddress(household) {
+      if (!household) return "";
+      const match = household.match(/^([A-Za-z0-9]+)-(\d+)F$/);
+      if (!match) return "";
+      
+      const unit = match[1];
+      const floor = match[2];
+      
+      const unitMap = {
+        'A1': '426號之1',
+        'A2': '428號之1',
+        'A3': '428號之2',
+        'A5': '428號之3',
+        'A6': '428號之5',
+        'A7': '428號之6',
+        'A8': '426號之5',
+        'A9': '426號之3',
+        'A11': '426號之2'
+      };
+      
+      const baseAddr = unitMap[unit];
+      if (!baseAddr) return "";
+      
+      const addrMatch = baseAddr.match(/^(\d+號)(之\d+)$/);
+      if (!addrMatch) return `${baseAddr} (${floor}F)`;
+      
+      return `${addrMatch[1]}${floor}樓${addrMatch[2]}`;
+    }
+
     // Generate static pool of households based on settings
     function generateHouseholds(settings) {
       const households = [];
@@ -610,6 +641,7 @@ Last updated: August 16, 2026
     const seqListCount = document.getElementById("seqListCount");
     const liveVisualizer = document.getElementById("liveVisualizer");
     const visualizerHousehold = document.getElementById("visualizerHousehold");
+    const visualizerAddress = document.getElementById("visualizerAddress");
     const visualizerParking = document.getElementById("visualizerParking");
     const visualizerProgressBar = document.getElementById("visualizerProgressBar");
 
@@ -712,9 +744,13 @@ Last updated: August 16, 2026
             parkingText = `<span class="text-slate-650 text-xs">等待配對</span>`;
           }
           
+          const addr = getHouseholdAddress(household);
           row.innerHTML = `
-            <div class="col-span-3 font-semibold ${isCurrent ? 'text-indigo-400' : 'text-slate-500'}">${index + 1}</div>
-            <div class="col-span-4 font-bold ${isCurrent ? 'text-indigo-300 text-base' : parkingVal !== null ? 'text-indigo-300/80' : 'text-slate-400'}">${household}</div>
+            <div class="col-span-2 font-semibold ${isCurrent ? 'text-indigo-400' : 'text-slate-500'}">${index + 1}</div>
+            <div class="col-span-5 flex flex-col justify-center">
+              <div class="font-bold ${isCurrent ? 'text-indigo-300 text-base' : parkingVal !== null ? 'text-indigo-300/80' : 'text-slate-400'}">${household}</div>
+              ${addr ? `<div class="text-[10px] text-slate-500 leading-tight">${addr}</div>` : ''}
+            </div>
             <div class="col-span-5 text-right font-semibold">${parkingText}</div>
           `;
           seqTableContainer.appendChild(row);
@@ -812,6 +848,7 @@ Last updated: August 16, 2026
 
       const household = state.householdsOrder[idx];
       visualizerHousehold.textContent = `${idx + 1}. ${household}`;
+      visualizerAddress.textContent = getHouseholdAddress(household);
       renderUI();
       scrollActiveRowIntoView();
 
