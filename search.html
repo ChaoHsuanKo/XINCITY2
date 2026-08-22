@@ -202,6 +202,23 @@ Last updated: August 16, 2026
     // Address parser mapping for households
     function getHouseholdAddress(household) {
       if (!household) return "";
+
+      // Storefront mapping
+      const storeMap = {
+        'S1': '1樓店面 S1',
+        'S2': '1樓店面 S2',
+        'S3': '1樓店面 S3',
+        'S5': '1樓店面 S5'
+      };
+      if (storeMap[household.toUpperCase()]) {
+        return storeMap[household.toUpperCase()];
+      }
+
+      const storeMatch = household.match(/^(S\d+)(-1F)?$/i);
+      if (storeMatch) {
+        return `1樓店面 ${storeMatch[1].toUpperCase()}`;
+      }
+
       const match = household.match(/^([A-Za-z0-9]+)-(\d+)F$/);
       if (!match) return "";
       

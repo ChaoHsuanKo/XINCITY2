@@ -265,6 +265,13 @@ Last updated: August 16, 2026
           <textarea id="unitsInput" rows="2" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-slate-200 focus:outline-none focus:border-indigo-500 font-mono resize-none"></textarea>
         </div>
 
+        <!-- Store Codes -->
+        <div>
+          <label class="block text-sm font-semibold text-slate-300 mb-1">店面代碼設定</label>
+          <span class="text-xs text-slate-500 block mb-2">請以英文逗號 (,) 分隔各店面代碼（例：S1, S2, S3, S5）</span>
+          <input type="text" id="storesInput" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-slate-200 focus:outline-none focus:border-indigo-500 font-mono">
+        </div>
+
         <!-- Parking Spot Count -->
         <div>
           <label class="block text-sm font-semibold text-slate-300 mb-2">總車位數</label>
@@ -487,6 +494,7 @@ Last updated: August 16, 2026
       minFloor: 2,
       maxFloor: 23,
       units: ['A1','A2','A3','A5','A6','A7','A8','A9','A11'],
+      stores: ['S1','S2','S3','S5'],
       parkingCount: 202,
       excludedParkingStr: "",
       soundEnabled: true,
@@ -543,6 +551,23 @@ Last updated: August 16, 2026
     // Address parser mapping for households
     function getHouseholdAddress(household) {
       if (!household) return "";
+
+      // Storefront mapping
+      const storeMap = {
+        'S1': '1樓店面 S1',
+        'S2': '1樓店面 S2',
+        'S3': '1樓店面 S3',
+        'S5': '1樓店面 S5'
+      };
+      if (storeMap[household.toUpperCase()]) {
+        return storeMap[household.toUpperCase()];
+      }
+
+      const storeMatch = household.match(/^(S\d+)(-1F)?$/i);
+      if (storeMatch) {
+        return `1樓店面 ${storeMatch[1].toUpperCase()}`;
+      }
+
       const match = household.match(/^([A-Za-z0-9]+)-(\d+)F$/);
       if (!match) return "";
       
@@ -573,6 +598,14 @@ Last updated: August 16, 2026
     // Generate static pool of households based on settings
     function generateHouseholds(settings) {
       const households = [];
+      
+      // Storefront units
+      const storeUnits = settings.stores || ['S1','S2','S3','S5'];
+      storeUnits.forEach(s => {
+        const trimmed = s.trim();
+        if (trimmed) households.push(trimmed);
+      });
+
       const minF = parseInt(settings.minFloor);
       const maxF = parseInt(settings.maxFloor);
       for (let f = minF; f <= maxF; f++) {
@@ -654,6 +687,7 @@ Last updated: August 16, 2026
     const minFloorInput = document.getElementById("minFloorInput");
     const maxFloorInput = document.getElementById("maxFloorInput");
     const unitsInput = document.getElementById("unitsInput");
+    const storesInput = document.getElementById("storesInput");
     const parkingCountInput = document.getElementById("parkingCountInput");
     const excludedParkingInput = document.getElementById("excludedParkingInput");
     const soundToggle = document.getElementById("soundToggle");
@@ -939,6 +973,7 @@ Last updated: August 16, 2026
       minFloorInput.value = settings.minFloor;
       maxFloorInput.value = settings.maxFloor;
       unitsInput.value = settings.units.join(', ');
+      storesInput.value = (settings.stores || ['S1','S2','S3','S5']).join(', ');
       parkingCountInput.value = settings.parkingCount;
       excludedParkingInput.value = settings.excludedParkingStr || "";
       rollDurationInput.value = settings.rollDuration || 0.8;
@@ -971,6 +1006,7 @@ Last updated: August 16, 2026
       const maxF = parseInt(maxFloorInput.value);
       const parkingC = parseInt(parkingCountInput.value);
       const unitsArr = unitsInput.value.split(',').map(s => s.trim()).filter(s => s.length > 0);
+      const storesArr = storesInput.value.split(',').map(s => s.trim()).filter(s => s.length > 0);
       
       if (isNaN(minF) || isNaN(maxF) || minF < 1 || maxF < minF) {
         alert("樓層設定不正確！起始樓層必須小於或等於最高樓層。");
@@ -1001,6 +1037,7 @@ Last updated: August 16, 2026
         minFloor: minF,
         maxFloor: maxF,
         units: unitsArr,
+        stores: storesArr,
         parkingCount: parkingC,
         excludedParkingStr: excludedParkingInput.value.trim(),
         rollDuration: rollD,
